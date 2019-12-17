@@ -1,32 +1,55 @@
-const express = require("express")
-const app = express()
-const port = process.env.PORT || 4000
-const bodyParser = require("body-parser")
-const jsonParser = bodyParser.json()
-const authRouter = require("./auth/router")
-const userRouter = require("./user/router")
-const cors = require("cors")
-const corsMiddleware = cors()
+const express = require("express");
+const app = express();
+const port = process.env.PORT || 4000;
+const bodyParser = require("body-parser");
+const jsonParser = bodyParser.json();
+const authRouter = require("./auth/router");
+const userRouter = require("./user/router");
+const cors = require("cors");
+const corsMiddleware = cors();
+const Sse = require("json-sse");
+const gameroomFactory = require("./gameroom/router");
+const gameRoomModel = require("./gameroom/model");
 
+app.use(corsMiddleware);
 
+const stream = new Sse();
+const gameroomRouter = gameroomFactory(stream);
 
+app.use(jsonParser);
 
+app.use(authRouter);
 
-app.use(corsMiddleware)
+app.use(userRouter);
 
-app.use(jsonParser)
+app.use(gameroomRouter);
 
-app.use(authRouter)
+app.get("/", (req, res, next) => {
+  stream.send("test");
 
-app.use(userRouter)
+  res.send("Hallo");
+});
 
+app.get("/stream", async (req, res, next) => {
+  try {
+      const gamerooms = await gameRoomModel.findAll()
 
-app.get("/", (req,res,next) => {
+      const action = {
 
-    res.send("Hallo")
+        type:"ALL_GAMEROOMS",
+        payload: gamerooms
+      }
 
+      const string = JSON.stringify(action)
+     
+     
+      stream.updateInit(string)
 
-})
+      
+    stream.init(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
-
-app.listen(port, ()=> console.log("server is connected"))
+app.listen(port, () => console.log("server is connected"));
