@@ -7,12 +7,13 @@ const authRouter = require("./auth/router");
 const userRouter = require("./user/router");
 const cors = require("cors");
 const corsMiddleware = cors();
-const Sse = require("json-sse");
-const gameroomFactory = require("./gameroom/router");
-const gameRoomModel = require("./gameroom/model");
 
 app.use(corsMiddleware);
 
+
+const Sse = require("json-sse");
+const gameRoomModel = require("./gameroom/model");
+const gameroomFactory = require("./gameroom/router");
 const stream = new Sse();
 const gameroomRouter = gameroomFactory(stream);
 
@@ -24,18 +25,13 @@ app.use(userRouter);
 
 app.use(gameroomRouter);
 
-app.get("/", (req, res, next) => {
-  stream.send("test");
 
-  res.send("Hallo");
-});
 
 app.get("/stream", async (req, res, next) => {
   try {
       const gamerooms = await gameRoomModel.findAll()
 
       const action = {
-
         type:"ALL_GAMEROOMS",
         payload: gamerooms
       }
@@ -45,11 +41,20 @@ app.get("/stream", async (req, res, next) => {
      
       stream.updateInit(string)
 
-      
+
     stream.init(req, res);
+
+
   } catch (error) {
     next(error);
   }
 });
+
+
+app.get("/", (req, res, next) => {
+    stream.send("test");
+  
+    res.send("Hallo");
+  });
 
 app.listen(port, () => console.log("server is connected"));
