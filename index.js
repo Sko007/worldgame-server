@@ -13,6 +13,8 @@ app.use(corsMiddleware);
 const Sse = require("json-sse");
 const gameRoomModel = require("./gameroom/model");
 const User = require("./user/model")
+const Questions = require("./question_answer/model")
+// const Score = require("./question_answer/question_answer")
 const stream = new Sse();
 
 
@@ -33,15 +35,24 @@ app.use(joinroomRouter)
 
 
 
+const question_answerFactory = require("./question_answer/router")
+const question_answerRouter = question_answerFactory(stream)
 
-// app.use(userRouter);
+
+app.use(question_answerRouter)
+
 
 
 app.use(gameroomRouter);
 
 app.get("/stream", async (req, res, next) => {
   try {
-    const gamerooms = await gameRoomModel.findAll({ include: [User] });
+    const gamerooms = await gameRoomModel.findAll(
+      
+      { include: [
+      User
+      
+    ] });
    
     const action = {
       type: "ALL_GAMEROOMS",
@@ -52,7 +63,7 @@ app.get("/stream", async (req, res, next) => {
 
     stream.updateInit(string);
 
-    stream.init(req, res);
+    stream.init(req,res);
   } catch (error) {
     next(error);
   }

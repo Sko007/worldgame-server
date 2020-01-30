@@ -1,28 +1,48 @@
 const Sequelize = require('sequelize')
-const sequelize = require('../db')
+const db = require('../db')
 const Gameroom = require("../gameroom/model")
+const Questions = require("../question_answer/model")
 
-const User = sequelize.define('user', {
+const User = db.define('user', {
   email: {
     type: Sequelize.STRING,
-    allowNull: false
+    allowNull: true
   },
   password: {
     type: Sequelize.STRING,
-    allowNull: false
+    allowNull: true
   },
   username: {
     type: Sequelize.STRING,
     allowNull: false
   },
+  score:{
+      type: Sequelize.INTEGER,
+      default: 0
+  },
+  ready:{
+    type:Sequelize.BOOLEAN,
+    defaultValue: false,
+    allowNull:true
+  },
+  startGame:{
+    type:Sequelize.BOOLEAN,
+    allowNull:true
+  },
+  answerGiven:{
+    type:Sequelize.BOOLEAN,
+    allowNull:true
+
+  }
 
 }, {
   timestamps: false,
-  tableName: 'users'
 })
 
-
 User.belongsTo(Gameroom)
+User.belongsTo(Questions)
 Gameroom.hasMany(User)
+
+
 
 module.exports = User

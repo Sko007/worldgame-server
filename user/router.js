@@ -2,6 +2,7 @@ const { Router } = require('express')
 const User = require('./model')
 const Gameroom = require('../gameroom/model')
 const auth = require("../auth/middleware")
+const {toData} = require("../auth/jwt")
 
 function factory (stream) {
   const router = new Router()
@@ -11,12 +12,31 @@ function factory (stream) {
     async (request, response, next) => {
       try {
         // Must be sent by client
+        console.log("how does the request look like", request.headers.authorization)
+
+        //console.log("data", toData(request.headers.authorization))
+
+
+        const auth =  request.headers.authorization && request.headers.authorization.split(" ");
+        console.log("auth after split", auth)
+
+        if (auth && auth[0] === "Bearer" && auth[1]) {
+        
+          const data = toData(auth[1]);
+          console.log("data after split", data)
+        }
+        
         const {
-          gameroomId
+          gameroomId, ready
         } = request.body
+
+        console.log("gamerromId in join", gameroomId)
+        console.log("check the ready boolean", ready)
 
         // Must use auth middleware
         const { user } = request
+
+        console.log("how does user inside join looks like", user)
 
         // The user from the auth
         // middleware is the row
@@ -24,7 +44,9 @@ function factory (stream) {
         // the user that sent
         // the request
         const updated = await user
-          .update({ gameroomId })
+          .update({ gameroomId, ready })
+
+          console.log("Promise", updated)
 
         // Get all gamerooms,
         // and all users in gamerooms
@@ -35,6 +57,8 @@ function factory (stream) {
 
         // Always create actions on the server
         // (except for signup and login)
+
+        console.log("gamerooms",gamerooms)
         const action = {
           type: 'ALL_GAMEROOMS',
           payload: gamerooms
