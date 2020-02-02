@@ -15,18 +15,13 @@ const Gameroom = sequelize.define(
       allowNull: true
     },
 
-  //   questionId: {
-  //       type: Sequelize.INTEGER,
-  //       references: {
-  //           model: question_answer,
-  //           key: 'id'        
-  //       }
-  // }
   },
   {
     timestamps: false
   }
 );
+question_answer.belongsTo(Gameroom)
+Gameroom.hasMany(question_answer)
 
 
 module.exports = Gameroom;

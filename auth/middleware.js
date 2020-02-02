@@ -13,11 +13,13 @@ function auth(req, res, next) {
     try {
       const data = toData(auth[1]);
         // console.log("middleware", data)
+        
 
       User.findByPk(data.userId)
         .then(user => {
           if (!user) return next("User does not exist");
           req.user = user;
+          console.log("DatabaseSingleUser",user)
           next();
         })
         .catch(next);

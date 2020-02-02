@@ -2,7 +2,9 @@ const { Router } = require("express");
 const Gameroom = require("./model");
 const auth = require("../auth/middleware");
 const User = require("../user/model");
-const Question = require("../question_answer/model");
+const Questions = require("../question_answer/model");
+const { toData } = require("../auth/jwt");
+const { Op } = require("sequelize");
 
 function factory(stream) {
   const router = new Router();
@@ -11,12 +13,15 @@ function factory(stream) {
     try {
       const gameroom = await Gameroom.create(req.body);
 
+      const users = { users: [] };
+      const questions = { questions: [] };
 
-      const users ={users:[]}
-      console.log("gameroom", gameroom)
-      const gameroomUser = {...gameroom.dataValues, ...users}
+      console.log("gameroom", gameroom);
+      const gameroomUser = { ...gameroom.dataValues, ...users, ...questions };
 
 
+
+      console.log("1111111111111111111111111", gameroomUser)
       const action = {
         type: "NEW_GAMEROOM",
         payload: gameroomUser
@@ -33,96 +38,137 @@ function factory(stream) {
     }
   });
 
-
-  // for an specific room
-  router.post("/gamelogic", auth, async (req, res, next) => {
+  router.put("/gamelogic", auth, async (req, res, next) => {
     try {
+      //console.log("data", toData(request.headers.authorization))
+
+      const auth =
+        req.headers.authorization && req.headers.authorization.split(" ");
+
+      if (auth && auth[0] === "Bearer" && auth[1]) {
+        const data = toData(auth[1]);
+      }
+
+      const { gameroomId } = req.body;
       const { user } = req;
-      const userId = user.id;
-      const gameroomId = Number(req.body.gameroomId);
+      const requestUserId = user.dataValues.id;
 
-  
+      const countQuestions = await Questions.count();
+      const randomNumber = Math.floor(Math.random() * countQuestions);
+
+      const updated = await user.update({ gameroomId });
+      const findUser = await User.findAndCountAll({
+        where: {
+          gameroomId: gameroomId
+        }
+      });
+
+      const UserIdInsideGameroom = findUser.rows.map(
+        user => user.dataValues.id
+      );
+
+      const updateQuestion = await Questions.update(
+        {
+          gameroomId: gameroomId
+        },
+        {
+          where: {
+            id: {
+              [Op.eq]: randomNumber
+            }
+          }
+        }
+      );
+
+      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
 
-      // update({ 
-      //   questionId: true
-      // }, {
-      //   where: {age: 7},
-      //   returning: true, // needed for affectedRows to be populated
-      //   plain: true // makes sure that the returned instances are just plain objects
-      // })
 
+      
+      const action = {
+        type: "ALL_GAMEROOMS",
+        payload: gamerooms
+      };
 
+      const string = JSON.stringify(action);
 
-      // const userInGameroom = await User.findAll({
-      //   where: { gameroomId: user.gameroomId }
-      // });
-      // console.log("userInGameroom", userInGameroom);
+      stream.send(string);
 
-      // const action = {
-      //   type: "USER",
-      //   payload: userInGameroom
-      // };
-
-      // const string = JSON.stringify(action);
-
-      // stream.send(string);
-
-      res.send(action);
+      res.send(updated);
     } catch (error) {
       next(error);
     }
   });
 
-  router.post("/answer", auth, async (req, res, next) => {
-    const { user } = req;
-    const { gameroomId, points } = user;
-
+  router.post("/startGame", auth, async (req, res, next) => {
     try {
-      const { answer, id } = req.body;
+      const auth =
+        req.headers.authorization && req.headers.authorization.split(" ");
 
-      const questions = [
-        {
-          id: 1,
-          question: "What is the greatest Country you have ever seen?",
-          answer: "Netherlands"
-        },
+      if (auth && auth[0] === "Bearer" && auth[1]) {
+        const data = toData(auth[1]);
+      }
 
-        {
-          id: 2,
-          question: "Which country has the most inhabitants on earth?",
-          answer: "India"
+      const { gameroomId } = req.body;
+      const { user } = req;
+      const requestUserId = user.dataValues.id;
+      console.log("check the gameroomId", gameroomId)
+
+      // const findUser = await User.findAndCountAll({
+      //   where: {
+      //     gameroomId: gameroomId
+      //   }
+      // });
+
+      // const userIdInsideGameroom = findUser.rows.map(user => user.dataValues.id);
+      // const userReady = findUser.rows.map(user=> user.startGame)
+
+      // if(userReady.every(item => item === true) === true){
+
+      const updated = await user.update({ gameroomId });
+
+      const countQuestions = await Questions.count();
+      const randomQuestion = Math.floor(Math.random() * (countQuestions-1)+1 )
+
+
+
+      console.log("randomQuestion", randomQuestion)
+      const pullQuestion = await Questions.findOne({
+        where: {
+          id: randomQuestion
         }
-      ];
+      });
 
-      // const question = questions.find(question => question.id === id)
-      // const correct = question.answer === answer
-      // const message = correct ? {answer: true}: {answer: false, correctAnswer: "todo"}
+      console.log("pullquestion", pullQuestion)
+      console.log("check the gameroomId in startGame", gameroomId)
 
-      // if(correct){
+      const idOfQuestion = pullQuestion.dataValues.id;
+      const updateQuestion = await pullQuestion.update({
+        gameroomId: gameroomId
+      });
+      console.log("update Qursiton", updateQuestion);
 
-      //   User.findByPk(user.dataValues.id)
-      //   .then(result => result.update({score: result.dataValues.score + 1}))
+        console.log("perform Gamerooms")
+
+      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
+
+
+
+      console.log("check content of gameroom", gamerooms);
+      const action = {
+        type: "ALL_GAMEROOMS",
+        payload: gamerooms
+      };
+
+      console.log("check the action before send", action)
+
+      const string = JSON.stringify(action);
+
+      stream.send(string);
+
+      res.send("wait a sec");
 
       // }
-
-      const gameroom = await Gameroom.findByPk(gameroomId, { include: [User] });
-      const { users } = gameroom;
-
-      const sorted = users.sort((a, b) => a.id - b.id);
-      const mine = sorted.findIndex(someone => someone.id === user.id);
-      const next = mine + 1;
-      const real = next % sorted.length;
-      const nextUser = sorted[real];
-      const nextId = nextUser.id;
-
-      await gameroom.update({ turn: nextId });
-      // [a, b, c]
-      //  0  1  2
-
-      //  stream.send()
-
-      res.send(message);
     } catch (error) {
       next(error);
     }
@@ -177,3 +223,15 @@ function factory(stream) {
 }
 
 module.exports = factory;
+
+// const gameroom = await Gameroom.findByPk(gameroomId, { include: [User] });
+// const { users } = gameroom;
+
+// const sorted = users.sort((a, b) => a.id - b.id);
+// const mine = sorted.findIndex(someone => someone.id === user.id);
+// const next = mine + 1;
+// const real = next % sorted.length;
+// const nextUser = sorted[real];
+// const nextId = nextUser.id;
+
+// await gameroom.update({ turn: nextId });

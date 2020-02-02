@@ -2,29 +2,18 @@ const { Router } = require("express");
 // const questionAnswer = require("./question_answer")
 const User = require("../user/model");
 const Gameroom = require("../gameroom/model");
-const Question = require("../question_answer/model")
+const Questions = require("../question_answer/model")
+const auth = require("../auth/middleware")
+const { toData } = require("../auth/jwt");
 
 function factory(stream) {
   const router = new Router();
 
   router.post("/postQuestion", async (req, res, next) => {
     try {
-      // const score = await Score.create(req.body);
-      // console.log("checkh if the route is hit")
-      // console.log("check req.body", req.body)
-      const createQuestion = await Question.create(req.body)
+    
+      const createQuestion = await Questions.create(req.body)
 
-      
-
-
-    //  const action = {
-    //    type: "QUESTION",
-    //    payload: createQuestion
-    //  };
-
-    //  const string = JSON.stringify(action);
-
-      // stream.send(string);
 
       res.send(createQuestion);
     } catch (error) {
@@ -38,43 +27,39 @@ function factory(stream) {
     try {
 
 
-      console.log("check if the route got hit")
-     
-      const randomQuestionId = await Question.findAll()
-      const lengthOfQuestions = randomQuestionId.length
+
+  const auth =
+        request.headers.authorization &&
+        request.headers.authorization.split(" ");
+      console.log("auth after split", auth);
+
+      if (auth && auth[0] === "Bearer" && auth[1]) {
+        const data = toData(auth[1]);
+        console.log("data after split", data);
+      }
+
+      const { gameroomId, ready } = request.body;
+
+      console.log("gamerromId in join", gameroomId, ready);
 
 
-      console.log("lengthOfQUestions", lengthOfQuestions)
-      
-      const randomQuestionNumber = Math.floor(Math.random()* (lengthOfQuestions-1)+1)
+      const { user } = request;
 
+      const updated = await user.update({ gameroomId, ready });
 
-      console.log("randomQuestionNumber", randomQuestionNumber)
-      
-      const getOneQuestionAnswer = await Question.findByPk(randomQuestionNumber)
-      console.log("getOneQUestioNAnswer", getOneQuestionAnswer)
+      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
+      const action = {
+        type: "ALL_GAMEROOMS",
+        payload: gamerooms
+      };
 
-      
+      const string = JSON.stringify(action);
 
-     const action = {
-       type: "QUESTION",
-       payload: getOneQuestionAnswer
-     };
-
-
-     const string = JSON.stringify(action);
-     console.log("check the string before sending to Stream")
       stream.send(string);
 
-      res.send(string);
-
+      response.send(updated);
       
-
-
-
-
-
     } catch (error) {
       next(error);
     }

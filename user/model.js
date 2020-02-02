@@ -31,8 +31,12 @@ const User = db.define('user', {
   },
   answerGiven:{
     type:Sequelize.BOOLEAN,
+    defaultValue:false,
     allowNull:true
-
+  },
+  questionAsk:{
+    type:Sequelize.ARRAY(Sequelize.INTEGER),
+    allowNull:true
   }
 
 }, {
@@ -40,8 +44,8 @@ const User = db.define('user', {
 })
 
 User.belongsTo(Gameroom)
-User.belongsTo(Questions)
 Gameroom.hasMany(User)
+
 
 
 
