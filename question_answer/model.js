@@ -13,6 +13,10 @@ question:{
 answer:{
     type:Sequelize.STRING,
     allowNull:false
+},
+update:{
+    type:Sequelize.BOOLEAN,
+    allowNull:true
 }
 
 })

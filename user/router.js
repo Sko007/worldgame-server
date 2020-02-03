@@ -3,9 +3,8 @@ const User = require("./model");
 const Gameroom = require("../gameroom/model");
 const auth = require("../auth/middleware");
 const { toData } = require("../auth/jwt");
-const Questions = require("./model");
+const Questions = require("../question_answer/model");
 const { Op } = require("sequelize");
-
 
 function factory(stream) {
   const router = new Router();
@@ -18,7 +17,6 @@ function factory(stream) {
         request.headers.authorization
       );
 
-
       const auth =
         request.headers.authorization &&
         request.headers.authorization.split(" ");
@@ -33,14 +31,9 @@ function factory(stream) {
 
       console.log("gamerromId in join", gameroomId, ready);
 
-
       const { user } = request;
-
       const updated = await user.update({ gameroomId, ready });
-      const updateQuestion = await Questions.update({})
-
       const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
-
 
       const action = {
         type: "ALL_GAMEROOMS",
@@ -57,65 +50,61 @@ function factory(stream) {
     }
   });
 
+  // router.put("/join1", auth, async (request, response, next) => {
+  //   try {
+  //     // Must be sent by client
+  //     console.log(
+  //       "how does the request look like",
+  //       request.headers.authorization
+  //     );
 
-  router.put("/join1", auth, async (request, response, next) => {
-    try {
-      // Must be sent by client
-      console.log(
-        "how does the request look like",
-        request.headers.authorization
-      );
+  //     const auth =
+  //       request.headers.authorization &&
+  //       request.headers.authorization.split(" ");
+  //     console.log("auth after split", auth);
 
+  //     if (auth && auth[0] === "Bearer" && auth[1]) {
+  //       const data = toData(auth[1]);
+  //       console.log("data after split", data);
+  //     }
 
-      const auth =
-        request.headers.authorization &&
-        request.headers.authorization.split(" ");
-      console.log("auth after split", auth);
+  //     const { gameroomId, ready } = request.body;
 
-      if (auth && auth[0] === "Bearer" && auth[1]) {
-        const data = toData(auth[1]);
-        console.log("data after split", data);
-      }
+  //     console.log("gamerromId in join", gameroomId, ready);
 
-      const { gameroomId, ready } = request.body;
+  //     const { user } = request;
 
-      console.log("gamerromId in join", gameroomId, ready);
+  //     const updated = await user.update({ gameroomId, ready });
 
+  //     const updateQuestion = await Questions.update(
+  //       {
+  //         gameroomId: gameroomId
+  //       },
+  //       {
+  //         where: {
+  //           id: {
+  //             [Op.gte]: 0
+  //           }
+  //         }
+  //       }
+  //     );
 
-      const { user } = request;
+  //     const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
-      const updated = await user.update({ gameroomId, ready });
+  //     const action = {
+  //       type: "ALL_GAMEROOMS",
+  //       payload: gamerooms
+  //     };
 
-      const updateQuestion = await Questions.update(
-        {
-          gameroomId: gameroomId
-        },
-        {
-          where: {
-            id: {
-              [Op.gte]: 0
-            }
-          }
-        }
-      );
+  //     const string = JSON.stringify(action);
 
-      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
+  //     stream.send(string);
 
-
-      const action = {
-        type: "ALL_GAMEROOMS",
-        payload: gamerooms
-      };
-
-      const string = JSON.stringify(action);
-
-      stream.send(string);
-
-      response.send(updated);
-    } catch (error) {
-      next(error);
-    }
-  });
+  //     response.send(updated);
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // });
   // router.post(
   //   '/clearAnswers',
   //   async (req, res, next) => {
