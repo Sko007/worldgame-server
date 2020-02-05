@@ -5,6 +5,7 @@ const User = require("../user/model");
 const Questions = require("../question_answer/model");
 const { toData } = require("../auth/jwt");
 const { Op } = require("sequelize");
+const UserQuestion = require("../user/userQuestionModel");
 
 function factory(stream) {
   const router = new Router();
@@ -16,16 +17,13 @@ function factory(stream) {
       const users = { users: [] };
       const questions = { questions: [] };
 
-      console.log("gameroom", gameroom);
       const gameroomUser = { ...gameroom.dataValues, ...users, ...questions };
 
-      console.log("1111111111111111111111111", gameroomUser);
       const action = {
         type: "NEW_GAMEROOM",
         payload: gameroomUser
       };
 
-      console.log("action", action);
       const string = JSON.stringify(action);
 
       stream.send(string);
@@ -36,89 +34,20 @@ function factory(stream) {
     }
   });
 
-  router.put("/gamelogic", auth, async (req, res, next) => {
-    try {
-      //console.log("data", toData(request.headers.authorization))
-
-      const auth =
-        req.headers.authorization && req.headers.authorization.split(" ");
-
-      if (auth && auth[0] === "Bearer" && auth[1]) {
-        const data = toData(auth[1]);
-      }
-
-      const { gameroomId } = req.body;
-      const { user } = req;
-      const requestUserId = user.dataValues.id;
-
-      const countQuestions = await Questions.count();
-      const randomNumber = Math.floor(Math.random() * countQuestions);
-
-      const updated = await user.update({ gameroomId });
-      const findUser = await User.findAndCountAll({
-        where: {
-          gameroomId: gameroomId
-        }
-      });
-
-      const UserIdInsideGameroom = findUser.rows.map(
-        user => user.dataValues.id
-      );
-
-      const updateQuestion = await Questions.update(
-        {
-          gameroomId: gameroomId
-        },
-        {
-          where: {
-            id: {
-              [Op.eq]: randomNumber
-            }
-          }
-        }
-      );
-
-      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
-
-      const action = {
-        type: "ALL_GAMEROOMS",
-        payload: gamerooms
-      };
-
-      const string = JSON.stringify(action);
-
-      stream.send(string);
-
-      res.send(updated);
-    } catch (error) {
-      next(error);
-    }
-  });
-
   router.post("/startGame", auth, async (req, res, next) => {
     try {
-      const auth =
-        req.headers.authorization && req.headers.authorization.split(" ");
+      // const auth =
+      //   req.headers.authorization && req.headers.authorization.split(" ");
 
-      if (auth && auth[0] === "Bearer" && auth[1]) {
-        const data = toData(auth[1]);
-      }
+      // if (auth && auth[0] === "Bearer" && auth[1]) {
+      //   const data = toData(auth[1]);
+      // }
 
       const { gameroomId } = req.body;
       const { user } = req;
       const requestUserId = user.dataValues.id;
-      console.log("check the gameroomId", gameroomId);
 
-      // const findUser = await User.findAndCountAll({
-      //   where: {
-      //     gameroomId: gameroomId
-      //   }
-      // });
-
-      // const userIdInsideGameroom = findUser.rows.map(user => user.dataValues.id);
-      // const userReady = findUser.rows.map(user=> user.startGame)
-
-      // if(userReady.every(item => item === true) === true){
+      console.log("check startgame gameromid", gameroomId);
 
       const updated = await user.update({ gameroomId });
 
@@ -127,148 +56,189 @@ function factory(stream) {
         Math.random() * (countQuestions - 1) + 1
       );
 
-      console.log("randomQuestion", randomQuestion);
       const pullQuestion = await Questions.findOne({
         where: {
           id: randomQuestion
         }
       });
 
-      console.log("pullquestion", pullQuestion);
-      console.log("check the gameroomId in startGame", gameroomId);
-
       const idOfQuestion = pullQuestion.dataValues.id;
       const updateQuestion = await pullQuestion.update({
         gameroomId: gameroomId
       });
-      console.log("update Qursiton", updateQuestion);
-
-      console.log("perform Gamerooms");
 
       const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
-      console.log("check content of gameroom", gamerooms);
+      console.log("check start game", gamerooms);
+
       const action = {
         type: "ALL_GAMEROOMS",
         payload: gamerooms
       };
 
-      console.log("check the action before send", action);
-
       const string = JSON.stringify(action);
-
       stream.send(string);
-
       res.send("wait until every player has answered");
-
-      // }
     } catch (error) {
       next(error);
     }
   });
 
-  router.post("/checkAnswer", auth, async (req, res, next) => {
+  router.put("/checkAnswer", auth, async (req, res, next) => {
     try {
-      //console.log("data", toData(request.headers.authorization))
-      console.log("check if answerroute is hit")
-      const auth =
-        req.headers.authorization && req.headers.authorization.split(" ");
+      // const auth =
+      //   req.headers.authorization && req.headers.authorization.split(" ");
 
-      if (auth && auth[0] === "Bearer" && auth[1]) {
-        const data = toData(auth[1]);
-      }
+      // if (auth && auth[0] === "Bearer" && auth[1]) {
+      //   const data = toData(auth[1]);
+      // }
 
       const { gameroomId, answer, questionId } = req.body;
       const { user } = req;
-    
+      console.log(
+        "check if runtime gets to this point",
+        user.dataValues.id,
+        questionId,
+        gameroomId
+      );
+      const findQuestion = await Questions.findByPk(questionId);
+      const getAnswer = findQuestion.dataValues.answer;
 
-      const findQuestion = await Questions.findByPk(questionId)
-      console.log("findQuestoin",findQuestion)
+      const modifyanswer = answer.split("");
+      const getLength = modifyanswer.length - 1;
+      const removeLastItem = modifyanswer.slice(0, getLength);
+      const joinItems = removeLastItem.join("");
 
-      const getAnswer = findQuestion.dataValues.answer
+      const userQuestionJoin = await UserQuestion.findOrCreate({
+        where: {
+          [Op.and]: [{ questionId: questionId }, { userId: user.dataValues.id }]
+        },
+        defaults: {
+          questionId: questionId,
+          userId: user.dataValues.id
+        }
+      });
 
-      console.log("answer out of database", getAnswer)
-      console.log("answer from user", answer );
+      // const allQuestions = await Questions.findAll({include:[User]})
+      console.log(
+        "userQuestionJoin and gamerromid",
+        userQuestionJoin,
+        gameroomId
+      );
+      const updated = await user.update({ gameroomId: gameroomId });
 
-      const modifyanswer = answer.split("")
-      const getLength = modifyanswer.length -1
-      console.log("getLength", getLength)
+      //wait until every player inside the gameroom has responded
 
-      const removeLastItem = modifyanswer.slice(0, getLength )
-      console.log("removeLastItem", removeLastItem)
-      const joinItems = removeLastItem.join("")
-      console.log("joinItem", joinItems)
-      if(joinItems === getAnswer){
-        console.log("check if answer is correct")
-
-        const getScore = user.dataValues.score
-        const updateScore = user.update({score: getScore+10})
-
-
-        console.log("correct Answer")
-      }else{
-
-        console.log("this is the wrong answer")
-      }
-      
-      
-
-
-
-      const updated = await user.update({ gameroomId });
-
-      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
-
-      const action = {
-        type: "ALL_GAMEROOMS",
-        payload: gamerooms
-      };
-
-      const string = JSON.stringify(action);
-
-      stream.send(string);
-
-      res.send(updated);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.put("/newQuestion", auth, async (req, res, next) => {
-    try {
-      //console.log("data", toData(request.headers.authorization))
-
-      const auth =
-        req.headers.authorization && req.headers.authorization.split(" ");
-
-      if (auth && auth[0] === "Bearer" && auth[1]) {
-        const data = toData(auth[1]);
-      }
-
-      const { gameroomId, answerGiven } = req.body;
-      const { user } = req;
-      const requestUserId = user.dataValues.id;
-      const countQuestions = await Questions.count();
-      const randomNumber = Math.floor(Math.random() * countQuestions);
-
-      const updated = await user.update({ gameroomId, answerGiven });
       const findUser = await User.findAndCountAll({
         where: {
           gameroomId: gameroomId
         }
       });
 
-      const UserIdInsideGameroom = findUser.rows.map(
-        user => user.dataValues.answergiven
+      // const checkAnswerGiven = userAnswerGiven.every(user => user === true);
+      // console.log("Answer Given", checkAnswerGiven);
+
+      if (joinItems === getAnswer) {
+        console.log("check if answer is correct", joinItems, getAnswer);
+
+        const getScore = user.dataValues.score;
+
+        const updateQuestion = findQuestion.update({ correctAnswer: true });
+        const updateScore = user.update({ score: getScore + 10 });
+
+        res.send(updated);
+      } else {
+        console.log("inside the else statement of first if");
+        const updateQueston = findQuestion.update({ correctAnswer: false });
+
+        res.send(updated);
+
+        console.log("this is the wrong answer");
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/newQuestion", auth, async (req, res, next) => {
+    try {
+      //console.log("data", toData(request.headers.authorization))
+
+      // const auth =
+      //   req.headers.authorization && req.headers.authorization.split(" ");
+
+      // if (auth && auth[0] === "Bearer" && auth[1]) {
+      //   const data = toData(auth[1]);
+      // }
+
+      // const { gameroomId, answerGiven } = req.body;
+      const { user } = req;
+      console.log("check how user looks in newQuestion", user);
+      // const requestUserId = user.dataValues.id;
+      const { gameroomId, wait } = req.body;
+      console.log("check the in newQuestion gameroomid and wait", gameroomId);
+
+      const countQuestions = await Questions.count();
+      const randomNumber = Math.floor(Math.random() * (countQuestions - 1) + 1);
+
+      const updated = await user.update({ gameroomId, answerGiven: true });
+      const findUser = await User.findAndCountAll({
+        where: {
+          gameroomId: gameroomId
+        },
+        include: [Questions]
+      });
+
+      const findAllUser = await User.findAll({
+        where: { gameroomId: gameroomId }
+      });
+
+      console.log("check findAllUser", findAllUser);
+
+      console.log("findUser in newQuestion", findUser);
+
+      const checkUserGivenAnswer = findUser.rows.map(
+        user => user.dataValues.answerGiven
       );
 
-      if (findUser.rows.each(user => user.answerGiven === true) === false) {
-        console.log("inside first if statement");
+      if (findUser.rows.every(user => user.answerGiven === true) === true) {
+        console.log("chekc if every route is hit");
+        console.log("gameroomId", gameroomId);
 
+        // const updateUser = await findUser.update({wait: false});
+
+        // const broadUpdateUser = await findUser.update({wait:false, answerGiven:false})
+
+        // const broadUpdate = await findAllUser.update({wait:false, answergiven: false})
+        // const checkUserGivenAnswer = findAllUser.forEach(async user => {
+        //   const userupdate = await user.update({
+        //     wait: false,
+        //     answerGiven: false
+        //   });
+        //   return userupdate;
+        // });
+
+        const updateUser = await User.update(
+          {
+            wait: false,
+            answerGiven: false
+          },
+
+          {
+            where: {
+              gameroomId: gameroomId
+            }
+          }
+        );
+
+        // console.log("checkUserGivenAnswer", checkUserGivenAnswer);
+        ///////////////in if or else I need to update the question
+        console.log("check if ");
         const gamerooms = await Gameroom.findAll({
           include: [User, Questions]
         });
 
+        console.log("if statement", gamerooms);
         const action = {
           type: "ALL_GAMEROOMS",
           payload: gamerooms
@@ -278,27 +248,66 @@ function factory(stream) {
 
         stream.send(string);
 
-        res.send("Please wait");
+        res.send(user);
       } else {
         console.log("check the else statement");
 
-        const updateQuestion = await Questions.update(
-          {
-            gameroomId: gameroomId
-          },
-          {
-            where: {
-              id: {
-                [Op.eq]: randomNumber
-              }
-            }
-          }
-        );
+        const updateUser = await user.update({ wait: true });
 
         const gamerooms = await Gameroom.findAll({
           include: [User, Questions]
         });
 
+        console.log("else statement", gamerooms);
+        const action = {
+          type: "ALL_GAMEROOMS",
+          payload: gamerooms
+        };
+
+        const string = JSON.stringify(action);
+
+        stream.send(string);
+
+        res.send(updateUser);
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/ready", auth, async (req, res, next) => {
+    try {
+      //console.log("data", toData(request.headers.authorization))
+
+      // const auth =
+      //   req.headers.authorization && req.headers.authorization.split(" ");
+
+      // if (auth && auth[0] === "Bearer" && auth[1]) {
+      //   const data = toData(auth[1]);
+      // }
+
+      // const { gameroomId, answerGiven } = req.body;
+      const { user } = req;
+      console.log("check how user looks in newQuestion", user);
+      // const requestUserId = user.dataValues.id;
+      const { gameroomId } = req.body;
+      console.log("check the in newQuestion gameroomid and wait", gameroomId);
+
+      const findUser = await User.findAndCountAll({
+        where: {
+          gameroomId: gameroomId
+        },
+        include: [Questions]
+      });
+
+      const updated = await user.update({ gameroomId, answerGiven: true });
+
+      if (findUser.rows.every(user => user.answerGiven === true) === true) {
+        const gamerooms = await Gameroom.findAll({
+          include: [User, Questions]
+        });
+
+        console.log("else statement", gamerooms);
         const action = {
           type: "ALL_GAMEROOMS",
           payload: gamerooms
@@ -309,55 +318,12 @@ function factory(stream) {
         stream.send(string);
         res.send(updated);
       }
+
+      res.status(200).send("wait");
     } catch (error) {
       next(error);
     }
   });
-
-  // router.get("/question", async (req, res, next) => {
-
-  //   console.log("got here")
-
-  //   // const { user } = req
-  //   // const userId = user.id
-
-  //   console.log("req.body inside gamelogic", req.body)
-
-  //   try {
-
-  //     const questionAnswer = [
-  //       {
-  //        id: 1,
-  //        question: "What is the greatest Country you have ever seen?",
-  //        answer: "Netherlands"
-  //      },
-
-  //       {
-  //        id: 2,
-  //        question: "Which country has the most inhabitants on earth?",
-  //        answer: "India"
-  //      }]
-
-  //      //make modeö for question
-  //      // if anser findbypk use id of te question() check also the jwt
-  //      //if nswer was good then change/update gameroomtable.turn als send new questions
-  //      //not good awnser senc correc answer to user
-
-  //    const action2 = {
-  //      type: "QUESTION",
-  //      payload: questionAnswer[1]
-  //    };
-
-  //    const string2 = JSON.stringify(action2);
-
-  //   //  stream.send(string);
-  //     stream.send(string2);
-
-  //     res.send({bs:null});
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // });
 
   return router;
 }

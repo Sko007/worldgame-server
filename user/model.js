@@ -1,7 +1,6 @@
 const Sequelize = require('sequelize')
 const db = require('../db')
 const Gameroom = require("../gameroom/model")
-const Questions = require("../question_answer/model")
 
 const User = db.define('user', {
   email: {
@@ -34,6 +33,10 @@ const User = db.define('user', {
     defaultValue:false,
     allowNull:true
   },
+  wait:{
+    type:Sequelize.BOOLEAN,
+    allowNull:true
+  },
   questionAsk:{
     type:Sequelize.ARRAY(Sequelize.INTEGER),
     allowNull:true
@@ -45,6 +48,8 @@ const User = db.define('user', {
 
 User.belongsTo(Gameroom)
 Gameroom.hasMany(User)
+
+
 
 
 

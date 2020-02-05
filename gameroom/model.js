@@ -1,6 +1,5 @@
 const Sequelize = require("sequelize");
 const sequelize = require("../db");
-const User = require("../user/model");
 const question_answer = require("../question_answer/model");
 
 const Gameroom = sequelize.define(
