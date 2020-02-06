@@ -11,17 +11,11 @@ function factory(stream) {
   router.put("/join", auth, async (request, response, next) => {
     try {
   
-      //   const auth =
-      //   request.headers.authorization &&
-      //   request.headers.authorization.split(" ");
+ 
 
-      // if (auth && auth[0] === "Bearer" && auth[1]) {
-      //   const data = toData(auth[1]);
-      // }
-
-      const { gameroomId, ready, score, wait, answerGiven } = request.body;
+      const { gameroomId, ready, score } = request.body;
       const { user } = request;
-      const updated = await user.update({ gameroomId, ready, score, wait, answerGiven });
+      const updated = await user.update({ gameroomId, ready, score });
       const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
       const action = {

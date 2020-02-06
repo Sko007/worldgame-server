@@ -51,21 +51,77 @@ function factory(stream) {
 
       const updated = await user.update({ gameroomId });
 
-      const countQuestions = await Questions.count();
-      const randomQuestion = Math.floor(
-        Math.random() * (countQuestions - 1) + 1
-      );
 
-      const pullQuestion = await Questions.findOne({
-        where: {
-          id: randomQuestion
-        }
-      });
+      // const pullQuestion = await Questions.findOne({
+      //   where: {
+      //     id: randomQuestion
+      //   }
+      // });
 
-      const idOfQuestion = pullQuestion.dataValues.id;
-      const updateQuestion = await pullQuestion.update({
-        gameroomId: gameroomId
+
+      const userInGameroom = await Gameroom.findByPk(gameroomId, {
+        include: [User]
       });
+      const getUserIds = userInGameroom.dataValues.users.map(
+        user => user.dataValues.id
+        );
+        
+        const userQuestionJoin = await UserQuestion.findAll({
+          where: {
+            userId: {
+              [Op.in]: getUserIds
+            }
+          }
+        });
+        
+        const findAllQuestions = await Questions.findAll();
+        
+        const getQuestionId = findAllQuestions.map(question => {
+          return question.dataValues.id;
+        });
+        
+        
+        const getPlayedQuestionsIds = await userQuestionJoin.map(values => {
+          if (getUserIds.includes(values.dataValues.userId)) {
+            return values.dataValues.questionId;
+          }
+        });
+        
+        const unplayedQuestions = getQuestionId.filter(
+          questionid => !getPlayedQuestionsIds.includes(questionid)
+          );
+          console.log("unplayedQuestionsss", unplayedQuestions);
+          
+          // const countQuestions = unplayedQuestions.map((_, index) => index)
+          // // const randomNumber = Math.floor(
+          // //   Math.random() * (countQuestions - 1) + 1
+          // //   );
+            const questionsLength = unplayedQuestions.length 
+
+            const ranQue = [Math.floor(Math.random() * questionsLength)]
+            const pickQuestion = unplayedQuestions[ranQue]
+
+            console.log("pickQuestion",  ranQue, pickQuestion)
+            const updateQuestion = await Questions.update(
+             { gameroomId:gameroomId},{
+
+
+              where:{
+                id:{
+
+                  [Op.eq]: pickQuestion
+                }
+
+              
+              }
+            }
+          )
+            console.log("updateQuestion", updateQuestion)
+ 
+      // const idOfQuestion = pullQuestion.dataValues.id;
+      // const updateQuestion = await pullQuestion.update({
+      //   gameroomId: gameroomId
+      // });
 
       const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
@@ -76,9 +132,25 @@ function factory(stream) {
         payload: gamerooms
       };
 
+      console.log("check the action which is being sended", action)
       const string = JSON.stringify(action);
       stream.send(string);
+      console.log("does the start game reach after res.send")
+
+      const clearQuestion = await Questions.update({
+              
+        where:{
+          id:{
+
+            [Op.eq]: null
+          },
+
+          
+        }
+      })
+
       res.send("wait until every player has answered");
+      // const clearQuestionId = await pullQuestion.update({})
     } catch (error) {
       next(error);
     }
@@ -118,6 +190,9 @@ function factory(stream) {
           userId: user.dataValues.id
         }
       });
+
+      const countQuestions = await Questions.count();
+      const randomNumber = Math.floor(Math.random() * (countQuestions - 1) + 1);
 
       // const allQuestions = await Questions.findAll({include:[User]})
       console.log(
@@ -162,62 +237,23 @@ function factory(stream) {
 
   router.post("/newQuestion", auth, async (req, res, next) => {
     try {
-      //console.log("data", toData(request.headers.authorization))
-
-      // const auth =
-      //   req.headers.authorization && req.headers.authorization.split(" ");
-
-      // if (auth && auth[0] === "Bearer" && auth[1]) {
-      //   const data = toData(auth[1]);
-      // }
-
-      // const { gameroomId, answerGiven } = req.body;
       const { user } = req;
       console.log("check how user looks in newQuestion", user);
       // const requestUserId = user.dataValues.id;
       const { gameroomId, wait } = req.body;
       console.log("check the in newQuestion gameroomid and wait", gameroomId);
 
-      const countQuestions = await Questions.count();
-      const randomNumber = Math.floor(Math.random() * (countQuestions - 1) + 1);
-
       const updated = await user.update({ gameroomId, answerGiven: true });
       const findUser = await User.findAndCountAll({
         where: {
           gameroomId: gameroomId
-        },
-        include: [Questions]
+        }
       });
 
-      const findAllUser = await User.findAll({
-        where: { gameroomId: gameroomId }
-      });
-
-      console.log("check findAllUser", findAllUser);
-
-      console.log("findUser in newQuestion", findUser);
-
-      const checkUserGivenAnswer = findUser.rows.map(
-        user => user.dataValues.answerGiven
-      );
+      console.log("findUser", findUser);
 
       if (findUser.rows.every(user => user.answerGiven === true) === true) {
-        console.log("chekc if every route is hit");
         console.log("gameroomId", gameroomId);
-
-        // const updateUser = await findUser.update({wait: false});
-
-        // const broadUpdateUser = await findUser.update({wait:false, answerGiven:false})
-
-        // const broadUpdate = await findAllUser.update({wait:false, answergiven: false})
-        // const checkUserGivenAnswer = findAllUser.forEach(async user => {
-        //   const userupdate = await user.update({
-        //     wait: false,
-        //     answerGiven: false
-        //   });
-        //   return userupdate;
-        // });
-
         const updateUser = await User.update(
           {
             wait: false,
@@ -230,15 +266,71 @@ function factory(stream) {
             }
           }
         );
-
-        // console.log("checkUserGivenAnswer", checkUserGivenAnswer);
-        ///////////////in if or else I need to update the question
-        console.log("check if ");
-        const gamerooms = await Gameroom.findAll({
-          include: [User, Questions]
+        
+        
+        //ALgorithm for checking if users have played the questions
+        
+        
+        const userInGameroom = await Gameroom.findByPk(gameroomId, {
+          include: [User]
         });
+        const getUserIds = userInGameroom.dataValues.users.map(
+          user => user.dataValues.id
+          );
+          
+          const userQuestionJoin = await UserQuestion.findAll({
+            where: {
+              userId: {
+                [Op.in]: getUserIds
+              }
+            }
+          });
+          
+          const findAllQuestions = await Questions.findAll();
+          
+          const getQuestionId = findAllQuestions.map(question => {
+            return question.dataValues.id;
+          });
+          
+          
+          const getPlayedQuestionsIds = await userQuestionJoin.map(values => {
+            if (getUserIds.includes(values.dataValues.userId)) {
+              return values.dataValues.questionId;
+            }
+          });
+          
+          const unplayedQuestions = getQuestionId.filter(
+            questionid => !getPlayedQuestionsIds.includes(questionid)
+            );
+            console.log("unplayedQuestionsss", unplayedQuestions);
+            
+            const questionsLength = unplayedQuestions.length 
 
-        console.log("if statement", gamerooms);
+            const ranQue = [Math.floor(Math.random() * questionsLength)]
+            const pickQuestion = unplayedQuestions[ranQue]
+
+            console.log("pickQuestion",  ranQue, pickQuestion)
+            const updateQuestion = await Questions.update(
+             { gameroomId:gameroomId},{
+
+
+              where:{
+                id:{
+
+                  [Op.eq]: pickQuestion
+                }
+
+              
+              }
+            }
+          )
+                
+
+         const gamerooms = await Gameroom.findAll({
+             include: [User, Questions]
+            });
+
+        // prepare the action before sending
         const action = {
           type: "ALL_GAMEROOMS",
           payload: gamerooms
@@ -270,56 +362,6 @@ function factory(stream) {
 
         res.send(updateUser);
       }
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post("/ready", auth, async (req, res, next) => {
-    try {
-      //console.log("data", toData(request.headers.authorization))
-
-      // const auth =
-      //   req.headers.authorization && req.headers.authorization.split(" ");
-
-      // if (auth && auth[0] === "Bearer" && auth[1]) {
-      //   const data = toData(auth[1]);
-      // }
-
-      // const { gameroomId, answerGiven } = req.body;
-      const { user } = req;
-      console.log("check how user looks in newQuestion", user);
-      // const requestUserId = user.dataValues.id;
-      const { gameroomId } = req.body;
-      console.log("check the in newQuestion gameroomid and wait", gameroomId);
-
-      const findUser = await User.findAndCountAll({
-        where: {
-          gameroomId: gameroomId
-        },
-        include: [Questions]
-      });
-
-      const updated = await user.update({ gameroomId, answerGiven: true });
-
-      if (findUser.rows.every(user => user.answerGiven === true) === true) {
-        const gamerooms = await Gameroom.findAll({
-          include: [User, Questions]
-        });
-
-        console.log("else statement", gamerooms);
-        const action = {
-          type: "ALL_GAMEROOMS",
-          payload: gamerooms
-        };
-
-        const string = JSON.stringify(action);
-
-        stream.send(string);
-        res.send(updated);
-      }
-
-      res.status(200).send("wait");
     } catch (error) {
       next(error);
     }
