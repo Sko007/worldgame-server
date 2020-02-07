@@ -35,10 +35,15 @@ const User = db.define('user', {
   },
   wait:{
     type:Sequelize.BOOLEAN,
-    allowNull:true
+    allowNull:true,
+    defaultValue:false
   },
   questionAsk:{
     type:Sequelize.ARRAY(Sequelize.INTEGER),
+    allowNull:true
+  },
+  totalScore:{
+    type:Sequelize.INTEGER,
     allowNull:true
   }
 

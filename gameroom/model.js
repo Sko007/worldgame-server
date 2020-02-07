@@ -13,6 +13,12 @@ const Gameroom = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: true
     },
+    gameStarted:{
+      type: Sequelize.BOOLEAN,
+      allowNull:true,
+      defaultValue:false
+
+    }
 
   },
   {
