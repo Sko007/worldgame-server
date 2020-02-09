@@ -17,7 +17,11 @@ const Gameroom = sequelize.define(
       type: Sequelize.BOOLEAN,
       allowNull:true,
       defaultValue:false
-
+    },
+    gameFinished:{
+      type:Sequelize.BOOLEAN,
+      allowNull:true,
+      defaultValue:false
     }
 
   },

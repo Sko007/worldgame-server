@@ -10,16 +10,16 @@ function factory(stream) {
 
   router.put("/join", auth, async (request, response, next) => {
     try {
-  
- 
-
       const { gameroomId, ready, score, wait, answerGiven } = request.body;
       const { user } = request;
-      const updated = await user.update({ gameroomId, ready, score, wait, answerGiven });
+      const updated = await user.update({
+        gameroomId,
+        ready,
+        score,
+        wait,
+        answerGiven
+      });
       const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
-
-
-      
 
       const action = {
         type: "ALL_GAMEROOMS",
@@ -33,20 +33,24 @@ function factory(stream) {
       next(error);
     }
   });
-
 
   router.post("/gameStarted", auth, async (request, response, next) => {
     try {
-  
- 
-
-      const { gameStarted, gameroomId } = request.body;
-      console.log("check gameStarted")
+      const { gameroomId } = request.body;
+      console.log("check gameStarted", gameroomId);
       const { user } = request;
-      const findGameroom = await Gameroom.findByPk(gameroomId)
-      console.log("findGameroom", findGameroom)
-      const updateGameroom = await findGameroom.update(gameStarted)
-    
+
+      console.log("user in gamestarted", user)
+      const userInGameroom = await Gameroom.findByPk(gameroomId, {
+        include: [User]
+      });
+      console.log("useerinGameroom", userInGameroom)
+
+      const gameStartedGameroom = await userInGameroom.update({
+        gameStarted: true
+      });
+
+      console.log("does he get to this point")
       const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
       const action = {
@@ -62,16 +66,13 @@ function factory(stream) {
     }
   });
 
-
   router.get("/fetchUser", auth, async (request, response, next) => {
     try {
-  
-
       const { gameStarted, gameroomId } = request.body;
-      console.log("check gameStarted")
+      console.log("check gameStarted");
 
-      const getAllUser = await User.findAll()
-      console.log("getUser", getAllUser)
+      const getAllUser = await User.findAll();
+      console.log("getUser", getAllUser);
 
       const action = {
         type: "USERS",
@@ -86,41 +87,34 @@ function factory(stream) {
     }
   });
 
-
-  router.post("/gameFinish", auth, async (request, response, next) => {
+  router.post("/destroyGame", auth, async (req, res, next) => {
     try {
-  
+      const { gameroomId } = req.body;
 
-      const { gameStarted, gameroomId } = request.body;
-      console.log("check gameStarted")
+      console.log("chekc if the gameroomId is incoming", gameroomId);
+      const findGameroom = await Gameroom.findByPk(gameroomId);
+      const destroyGameroom = await Gameroom.destroy({
+        where: { id: gameroomId }
+      });
 
-      const getAllUser = await User.findAll()
-      console.log("getUser", getAllUser)
+      console.log("check destroyGameroom", destroyGameroom);
+
+      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
       const action = {
-        type: "USERS",
-        payload: getAllUser
+        type: "ALL_GAMEROOMS",
+        payload: gamerooms
       };
 
       const string = JSON.stringify(action);
       stream.send(string);
-      response.send(getAllUser);
+      res.send(getAllUser);
     } catch (error) {
       next(error);
     }
   });
-
-
-
-
-
-
-
 
   return router;
 }
 
 module.exports = factory;
-
-
-

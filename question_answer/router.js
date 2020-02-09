@@ -23,47 +23,47 @@ function factory(stream) {
 
 
 
-  router.post("/question", async (req, res, next) => {
-    try {
+  // router.post("/question", async (req, res, next) => {
+  //   try {
 
 
 
-  const auth =
-        request.headers.authorization &&
-        request.headers.authorization.split(" ");
-      console.log("auth after split", auth);
+  // const auth =
+  //       request.headers.authorization &&
+  //       request.headers.authorization.split(" ");
+  //     console.log("auth after split", auth);
 
-      if (auth && auth[0] === "Bearer" && auth[1]) {
-        const data = toData(auth[1]);
-        console.log("data after split", data);
-      }
+  //     if (auth && auth[0] === "Bearer" && auth[1]) {
+  //       const data = toData(auth[1]);
+  //       console.log("data after split", data);
+  //     }
 
-      const { gameroomId, ready } = request.body;
+  //     const { gameroomId, ready } = request.body;
 
-      console.log("gamerromId in join", gameroomId, ready);
+  //     console.log("gamerromId in join", gameroomId, ready);
 
 
-      const { user } = request;
+  //     const { user } = request;
 
-      const updated = await user.update({ gameroomId, ready });
+  //     const updated = await user.update({ gameroomId, ready });
 
-      const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
+  //     const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
-      const action = {
-        type: "ALL_GAMEROOMS",
-        payload: gamerooms
-      };
+  //     const action = {
+  //       type: "ALL_GAMEROOMS",
+  //       payload: gamerooms
+  //     };
 
-      const string = JSON.stringify(action);
+  //     const string = JSON.stringify(action);
 
-      stream.send(string);
+  //     stream.send(string);
 
-      response.send(updated);
+  //     response.send(updated);
       
-    } catch (error) {
-      next(error);
-    }
-  });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // });
 
 
 
