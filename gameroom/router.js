@@ -229,12 +229,12 @@ function factory(stream) {
 
         // const updateQuestion = findQuestion.update({ correctAnswer: true });
         const updateScore = user.update({
-          score: getScore + 10,
-          totalScore: getScore + 10
+          score: getScore + 1,
+          totalScore: getScore + 1
         });
         const getUserScore = user.dataValues.score;
 
-        if (getUserScore === 100) {
+        if (getUserScore === 10) {
           const gameEnd = await userInGameroom.update({gameFinished: true})
       
           const userWon = await user.update({ won: true });
