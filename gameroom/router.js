@@ -192,7 +192,6 @@ function factory(stream) {
       const countQuestions = await Questions.count();
       const randomNumber = Math.floor(Math.random() * (countQuestions - 1) + 1);
 
-      // const allQuestions = await Questions.findAll({include:[User]})
 
 
       //wait until every player inside the gameroom has responded
@@ -204,13 +203,10 @@ function factory(stream) {
       });
 
 
-      // const checkAnswerGiven = userAnswerGiven.every(user => user === true);
-      // console.log("Answer Given", checkAnswerGiven);
-
       if (joinItems === getAnswer) {
         console.log("check if answer is correct", joinItems, getAnswer);
 
-        const getScore = user.dataValues.score;
+        const getScore = user.dataValues.totalScore;
 
         const userQuestionJoin = await UserQuestion.findOrCreate({
           where: {
@@ -234,7 +230,7 @@ function factory(stream) {
         });
         const getUserScore = user.dataValues.score;
 
-        if (getUserScore === 10) {
+        if (getUserScore === 5) {
           const gameEnd = await userInGameroom.update({gameFinished: true})
       
           const userWon = await user.update({ won: true });
@@ -344,26 +340,7 @@ function factory(stream) {
         const ranQue = [Math.floor(Math.random() * questionsLength)];
         const pickQuestion = unplayedQuestions[ranQue];
         console.log("check pickquestion", pickQuestion);
-        // if (pickQuestion === undefined) {
-        //   const oneGameroom = await Gameroom.findByPk(gameroomId);
-        //   const updateGameroom = await oneGameroom.update({
-        //     gameFinished: true
-        //   });
 
-        //   const gamerooms = await Gameroom.findAll({
-        //     include: [User, Questions]
-        //   });
-
-        //   // prepare the action before sending
-        //   const action = {
-        //     type: "ALL_GAMEROOMS",
-        //     payload: gamerooms
-        //   };
-
-        //   const string = JSON.stringify(action);
-
-        //   stream.send(string);
-        // }
 
         const clearQuestion = await Questions.update(
           { gameroomId: null },
@@ -431,14 +408,3 @@ function factory(stream) {
 
 module.exports = factory;
 
-// const gameroom = await Gameroom.findByPk(gameroomId, { include: [User] });
-// const { users } = gameroom;
-
-// const sorted = users.sort((a, b) => a.id - b.id);
-// const mine = sorted.findIndex(someone => someone.id === user.id);
-// const next = mine + 1;
-// const real = next % sorted.length;
-// const nextUser = sorted[real];
-// const nextId = nextUser.id;
-
-// await gameroom.update({ turn: nextId });

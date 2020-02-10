@@ -108,6 +108,7 @@ function factory(stream) {
 
       const string = JSON.stringify(action);
       stream.send(string);
+      
       const destroyGameroom = await Gameroom.destroy({
         where: { id: gameroomId }
       });
