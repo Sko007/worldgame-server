@@ -17,7 +17,9 @@ function factory(stream) {
         ready,
         score,
         wait,
-        answerGiven
+        answerGiven,  
+        won:false,
+        lost:false
       });
       const gamerooms = await Gameroom.findAll({ include: [User, Questions] });
 
@@ -93,9 +95,7 @@ function factory(stream) {
 
       console.log("chekc if the gameroomId is incoming", gameroomId);
       const findGameroom = await Gameroom.findByPk(gameroomId);
-      const destroyGameroom = await Gameroom.destroy({
-        where: { id: gameroomId }
-      });
+     
 
       console.log("check destroyGameroom", destroyGameroom);
 
@@ -108,6 +108,9 @@ function factory(stream) {
 
       const string = JSON.stringify(action);
       stream.send(string);
+      const destroyGameroom = await Gameroom.destroy({
+        where: { id: gameroomId }
+      });
       res.send(getAllUser);
     } catch (error) {
       next(error);

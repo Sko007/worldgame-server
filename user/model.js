@@ -44,7 +44,8 @@ const User = db.define('user', {
   },
   totalScore:{
     type:Sequelize.INTEGER,
-    allowNull:true
+    allowNull:true,
+    defaultValue: 0
   },
   won:{
     type:Sequelize.BOOLEAN,
