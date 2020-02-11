@@ -206,7 +206,7 @@ function factory(stream) {
       if (joinItems === getAnswer) {
         console.log("check if answer is correct", joinItems, getAnswer);
 
-        const getScore = user.dataValues.totalScore;
+        const getScore = user.dataValues.score;
 
         const userQuestionJoin = await UserQuestion.findOrCreate({
           where: {
@@ -228,7 +228,7 @@ function factory(stream) {
           score: getScore + 1,
           totalScore: getScore + 1
         });
-        const getUserScore = user.dataValues.score;
+        const getUserScore = user.dataValues.totalScore;
 
         if (getUserScore === 5) {
           const gameEnd = await userInGameroom.update({gameFinished: true})
