@@ -77,7 +77,6 @@ function factory(stream) {
       const unplayedQuestions = getQuestionId.filter(
         questionid => !getPlayedQuestionsIds.includes(questionid)
       );
-      console.log("unplayedQuestionsss", unplayedQuestions);
 
     
       const questionsLength = unplayedQuestions.length;
@@ -136,10 +135,6 @@ function factory(stream) {
       console.log("check the action which is being sended", action);
       const string = JSON.stringify(action);
       stream.send(string);
-      console.log("does the start game reach after res.send");
-
- 
-
       res.send("wait until every player has answered");
     } catch (error) {
       next(error);
