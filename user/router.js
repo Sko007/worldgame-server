@@ -112,6 +112,10 @@ function factory(stream) {
       const destroyGameroom = await Gameroom.destroy({
         where: { id: gameroomId }
       });
+
+
+
+      
       res.send(destroyGameroom);
     } catch (error) {
       next(error);
