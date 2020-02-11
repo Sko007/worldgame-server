@@ -39,8 +39,6 @@ app.get("/stream", async (req, res, next) => {
   try {
     const gamerooms = await gameRoomModel.findAll({ include: [User, Questions] });
 
-    console.log("iiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmmmmmm index", gamerooms)
-
     const action = {
       type: "ALL_GAMEROOMS",
       payload: gamerooms
